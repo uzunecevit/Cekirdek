@@ -2,7 +2,7 @@
 
 > **Pattern-triggered, outcome-reinforced, multi-action neuro-symbolic task router.**
 
-76K parametreli Spiking Neural Network (SNN) ile inşa edilmiş, online öğrenen, catastrophic forgetting'ı sleep consolidation ile önleyen ve neuro-symbolic routing (compute, verify, generate) yapabilen bir bilişsel mimari prototipi.
+76K parametreli Spiking Neural Network (SNN) ile inşa edilmiş, online öğrenen, catastrophic forgetting'ı sleep consolidation ile önleyen ve neuro-symbolic routing (compute, verify, generate) yapabilen bir bilişsel mimari araştırma projesi.
 
 ---
 
@@ -41,20 +41,50 @@ ActionHead (3 classes: generate, compute, verify)
 
 ---
 
-## 📊 Sonuçlar
+## 📊 Yolculuk: Phase 0 → Phase 6.8
 
-| Faz | Yöntem | Sonuç |
-|-----|--------|-------|
-| Phase 0-1 | SNN Temelleri | ✅ 76K param, %16 spike rate |
-| Phase 2 | R-STDP | ✅ 21× öğrenme artışı |
-| Phase 3 | Ternary + Context Gating | ✅ threshold=0.3, amplitude=2.0 |
-| Phase 4 | Sleep Consolidation | ✅ Forgetting +12.1% → +1.5% |
-| Phase 5 | VSA Denemeleri | ❌ Math reasoning yetersiz |
-| Phase 6.0-6.4 | Hybrid + Outcome STDP | ✅ 100% (2-action) |
-| Phase 6.5 | Ambiguity Injection | ⚠️ 50% ambiguous |
-| Phase 6.6 | Saliency-Guided | ✅ 100% unseen ambiguous |
-| Phase 6.7 | 3-Action Pipeline | ⚠️ 80% (verify 0%) |
-| **Phase 6.8** | **Keyword-Enhanced 3-Action** | **✅ 100% Pipeline** |
+Bu proje sadece bir "çalışan sistem" değil, **SNN'lerin sınırlarını ve potansiyelini haritalayan bir araştırma yolculuğu**. 8 ana faz, 20+ deney, 42+ öğrenilen ders.
+
+| Faz | Yöntem | Sonuç | Not |
+|-----|--------|-------|-----|
+| Phase 0-1 | SNN sıfırdan yazıldı | ✅ 76K param, %16 spike rate | Kendi LIF, attention, FFN |
+| Phase 2 | R-STDP online öğrenme | ✅ 21× öğrenme artışı | Context Gating ile |
+| Phase 3 | Ternary spike + amplitude | ✅ threshold=0.3, amp=2.0 | Binary'den 3.4× etkili |
+| Phase 4 | Sleep Consolidation | ✅ Forgetting +12.1% → +1.5% | Catastrophic forgetting önlendi |
+| Phase 5 | VSA ile sembolik akıl yürütme | ❌ Başarısız | Binding commutative, işlem ayrımı yok |
+| Phase 6.0 | Hybrid Backprop | ❌ 0% generalization | LM head lookup table oldu |
+| Phase 6.1 | Intent classification | ❌ 40% unseen | Soyutlama yetersiz |
+| Phase 6.2 | Task Gating (supervised) | ✅ 100% | Pattern tanıma SNN'in işi |
+| Phase 6.3 | STDP decision (supervised) | ✅ 100% | Decision reinforcement çalıştı |
+| Phase 6.4 | Outcome-Based STDP | ✅ 100% | Label-free, sonuçtan öğrenme |
+| Phase 6.5 | Ambiguity injection | ⚠️ 50% | Yüzey-level representation sınırı |
+| Phase 6.6 | Saliency-Guided | ✅ 100% | Op boost=10, hidden state modulation |
+| Phase 6.7 | 3-Action Pipeline | ⚠️ 80% | Verify öğrenilemedi |
+| **Phase 6.8** | **Keyword-Enhanced 3-Action** | **✅ 100%** | Verify boost=5, 20 verify örneği |
+
+---
+
+## 🔑 Öğrenilen Dersler
+
+### SNN Hakkında
+1. **STDP istatistiksel pattern öğrenir, sembolik mantık değil** → `3+4=7` bir kural, olasılık değil
+2. **SNN reasoning yapmaz, karar verir** → Doğru aracı seçme, hesaplama yapma
+3. **Ternary spike {-1,0,+1}** → Binary'den 3.4× daha etkili
+4. **Context Gating** → 21× öğrenme artışı (surprise_threshold=0.3)
+5. **Sleep Consolidation** → Catastrophic forgetting +12.1% → +1.5%
+
+### Hybrid Mimari Hakkında
+6. **Batched backprop interference'ı çözer** → Sequential update catastrophic forgetting'e yol açar
+7. **Keyword boost > operatör boost** → "doğru", "yanlış" gibi kelimeler verify sinyali olarak kritik
+8. **Saliency tek başına yetersiz** → ActionHead'in saliency-modulated state'lerle yeniden eğitilmesi gerekir
+9. **Outcome-based STDP çalışır** → Label olmadan, sonuçtan öğrenme mümkün
+10. **3-action decision boundary** → 2-action'dan çok daha karmaşık, daha fazla veri gerekli
+
+### Başarısızlıklardan
+11. **VSA binding matematiksel ilişki KODLAMAZ** → Commutative, işlem ayrımı yok
+12. **Intent classification generalize etmez** → SNN yüzey-level pattern tanır, semantik anlamaz
+13. **LM head lookup table olur** → Backprop ile mapping öğrenir, reasoning yapmaz
+14. **Başarısız deneyler, başarılılar kadar değerli** → Sınırları netleştirirler
 
 ---
 
@@ -68,16 +98,19 @@ source .venv/bin/activate
 pip install torch
 ```
 
+> **Not:** Model checkpoint'leri (`.pt` dosyaları) repo boyutunu küçük tutmak için `.gitignore`'dadır.
+> Kendi modelinizi eğitmek için `experiments/phase1_train.py` ile başlayın.
+
 ---
 
 ## ⚡ Hızlı Başlangıç
 
 ```bash
-# Phase 6.8: Final pipeline test
+# Phase 6.8: Final pipeline test (kendi checkpoint'lerinizle)
 python experiments/phase6_8_keyword.py
 ```
 
-Çıktı:
+Beklenen çıktı:
 ```
 Compute: 100%
 Verify:  100%
@@ -93,14 +126,15 @@ Pipeline: 100%
 Cekirdek/
 ├── README.md                 ← Bu dosya
 ├── docs/
-│   └── DETAILED_PLAN.md      ← Tüm phase'lerin detaylı planı
+│   └── DETAILED_PLAN.md      ← Tüm phase'lerin detaylı planı + 42+ ders
 ├── src/
 │   ├── model.py              ← SpikingLM, TernaryLIF, TernarySpikeFunction
-│   ├── stdp.py               ← R-STDP, SimpleRSTDP
+│   ├── stdp.py               ← R-STDP, SimpleRSTDP, shaped_reward
 │   ├── intent.py             ← Intent extractor (expression + statement)
-│   ├── engine.py             ← Symbolic math engine
-│   ├── action_head.py        ← ActionHead + STDP update
+│   ├── engine.py             ← Symbolic math engine (ADD, SUB, MUL)
+│   ├── action_head.py        ← ActionHead + STDP decision update
 │   ├── task_gating.py        ← TaskClassifier (Phase 6.2)
+│   ├── hybrid.py             ← Hybrid feedback köprüsü
 │   └── vsa.py                ← VSA operations (FHRR binding, bundling)
 ├── experiments/
 │   ├── phase1_train.py       ← Temel SNN eğitimi
@@ -109,36 +143,25 @@ Cekirdek/
 │   ├── phase4_1_multi_task.py ← Multi-Task Stability
 │   ├── phase4_3_sleep_consolidation.py ← Sleep-Mediated Consolidation
 │   ├── phase6_2_gating.py    ← Task Gating
-│   ├── phase6_4_outcome.py   ← Outcome-Based STDP
+│   ├── phase6_4_outcome.py   ← Outcome-Based STDP (label-free)
 │   ├── phase6_6_saliency_training.py ← Saliency-Guided Learning
-│   └── phase6_8_keyword.py   ← Final: Keyword-Enhanced 3-Action
-├── checkpoints/
-│   ├── spiking_lm_v2.pt      ← Eğitilmiş SNN (76K param)
-│   └── action_head_v6_keyword.pt ← Eğitilmiş ActionHead
+│   ├── phase6_8_keyword.py   ← Final: Keyword-Enhanced 3-Action
+│   └── ...                   ← 20+ deney script'i
 ├── data/
-│   ├── vocab.json            ← 64 karakter vocab
+│   ├── vocab.json            ← 64 karakter vocab (Türkçe + rakamlar + operatörler)
 │   ├── pretrain_samples.txt  ← Karışık dataset
-│   ├── turkish.txt           ← Türkçe dataset
-│   └── math.txt              ← Matematik dataset
+│   ├── turkish.txt           ← Türkçe dataset (çekim ekleri + atasözleri)
+│   └── math.txt              ← Matematik dataset (toplama, çıkarma, çarpma)
+├── checkpoints/              ← Model checkpoint'leri (.gitignore'da)
+│   └── .gitkeep
 └── .gitignore
 ```
 
 ---
 
-## 🔑 Öğrenilen Dersler
-
-1. **STDP istatistiksel pattern öğrenir, sembolik mantık değil** → `3+4=7` bir kural, olasılık değil
-2. **SNN reasoning yapmaz, karar verir** → Doğru aracı seçme, hesaplama yapma
-3. **Batched backprop interference'ı çözer** → Sequential update catastrophic forgetting'e yol açar
-4. **Keyword boost > operatör boost** → "doğru", "yanlış" gibi kelimeler verify sinyali olarak kritik
-5. **Saliency tek başına yetersiz** → ActionHead'in saliency-modulated state'lerle yeniden eğitilmesi gerekir
-6. **Başarısız deneyler, başarılılar kadar değerli** → VSA, intent classification, ambiguity injection sınırları netleştirdi
-
----
-
 ## 📖 Detaylı Plan
 
-Tüm phase'lerin detaylı açıklamaları, deney sonuçları ve mimari kararlar için:
+Tüm phase'lerin detaylı açıklamaları, deney sonuçları, ablation çalışmaları ve mimari kararlar için:
 
 → [docs/DETAILED_PLAN.md](docs/DETAILED_PLAN.md)
 
