@@ -64,7 +64,7 @@ Mamba-Codestral bir **kod modeli** — Türkçe bilmiyor. Distillation için **u
 - **Qwen3.5-9B-Q4_K_M.gguf** (`/home/ayandon/KAPTAN/modeller/`)
 - 9B parametre, Hybrid SSM+Attention, 4-bit quantized
 
-### Sonuçlar
+### Sonuçlar (Final)
 
 | Test | Sonuç | Not |
 |------|-------|-----|
@@ -83,7 +83,10 @@ Mamba-Codestral bir **kod modeli** — Türkçe bilmiyor. Distillation için **u
 | `6*6=35 doğru mu?` | verify | (boş) | Aynı sorun |
 
 ### Karar
-**Qwen öğretmen olarak UYGUN** (overall 76% > %70). Verify zayıf ama sentetik veri ile iyileştirilebilir.
+**Qwen öğretmen olarak UYGUN** (overall 76% > %70). Verify zayıf ama sentetik veri ile iyileştirilecek.
+
+### PROJECT-TURBO Entegrasyonu
+TURBO ile n_ctx=8192'ye çıkarıldı (varsayılan 2048'den). Sonuçlar değişmedi çünkü sorun context değil, completion API'nin chat template uygulamaması. TURBO, Faz 7.2 (Sentetik Veri) için kritik altyapı olacak.
 
 ---
 
