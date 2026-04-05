@@ -1,361 +1,211 @@
-# Çekirdek — Faz 7: Öğretmen Model Doğrulama ve Bilgi Damıtma
+# Çekirdek — Faz 7: Hybrid Cognitive Router
 
-> *"Önce konuştur. Sonra büyüt."*
+> *"SNN üretmez — ama neyin üretileceğine karar verir."*
 
 **Oluşturulma:** 2026-04-05
-**Son güncelleme:** 2026-04-06 (sabah)
-**Durum:** Faz 7.0 tamamlandı, Faz 7.0.1 (Mini Dil Aşısı) hazırlanıyor
+**Son güncelleme:** 2026-04-06 (öğleden sonra)
+**Durum:** Faz 7.0.1 kapatıldı (SNN dil üretimi yetersiz). Yeni yön: Multi-Action RL (Phase 6.7 genişletilmiş)
 
 ---
 
 ## 🎯 Hedef
 
-Mevcut 76K parametreli Çekirdek modelini **konuşturmak** ve genelleyebilen bir sistem haline getirmek.
+SNN'i bir **bilişsel yönlendirici (cognitive router)** olarak mükemmelleştirmek:
+- Input'u analiz et → doğru action'ı seç → doğru aracı çağır
 
 ---
 
-## 📋 Yol Haritası (Güncellenmiş Sıralama)
+## 📋 Yol Haritası
 
 ```
 Faz 7.0:   Mamba Test              → ❌ Elendi (Türkçe yok)
 Faz 7.0.5: Qwen3.5-9B Test        → ✅ PASS (76%)
-Faz 7.0.1: Mini Dil Aşısı         → ⏳ Hazırlanıyor (İNCE)
-Faz 7.0.2: Stabil Generation      → ⏳ Planlandı
-Faz 7.1:   Scaling (76K → 300-500K) → ⏳ Planlandı
-Faz 7.2:   Sentetik Veri (TURBO)   → ⏳ Planlandı
-Faz 7.3:   Bilgi Damıtma           → ⏳ Planlandı
-Faz 7.4:   Birleşmiş Pipeline      → ⏳ Planlandı
+Faz 7.0.1: Mini Dil Aşısı         → ❌ KAPATILDI (SNN dil üretemez)
+Faz 6.7.2: Multi-Action RL (4)    → ⏳ Hazırlanıyor
+Faz 7.1:   Hybrid Pipeline        → ⏳ Planlandı
+Faz 7.2:   LLM Entegrasyonu       → ⏳ Planlandı
+Faz 7.3:   Memory Module          → ⏳ Uzun vadeli
 ```
-
-### ⚠️ Sıralama Neden Değişti?
-
-**Önceki (yanlış) sıra:**
-```
-Scaling → Sentetik Veri → Distillation
-```
-
-**Doğru sıra:**
-```
-Dil Aşısı → Stabil Generation → Scaling → Sentetik Veri → Distillation
-```
-
-**Neden:**
-- Scaling olmadan önce modelin **anlamlı çıktı** üretmesi lazım
-- 300K parametre ile anlamsız çıktı = daha büyük gürültü
-- Distillation için "damıtılacak kap" gerekli
-- STDP + dil = random drift (reward yok)
 
 ---
 
-## 🔬 Faz 7.0: Mamba-Codestral-7B Test (Tamamlandı — ❌ Elendi)
+## 🔬 Faz 7.0.1: Mini Dil Aşısı (Kapatıldı — ❌)
 
-### Test Edilen Model
-- **Mamba-Codestral-7B-v0.1** (`/home/ayandon/KAPTAN/modeller/`)
-- 7B parametre, SSM mimarisi, kod odaklı
+### Ne Yaptık?
+- Sadece LM head eğitimi (4.160 parametre)
+- 6.504 temiz Türkçe çift ile eğitim
+- 10 epoch, ~7 saniye/epoch
 
 ### Sonuçlar
 
-| Test | Sonuç | Not |
-|------|-------|-----|
-| Compute | ✅ 100% (8/8) | Matematik evrensel |
-| Verify | ❌ 0% (0/5) | Türkçe anlamıyor |
-| Generate | ❌ 0% (0/8) | Türkçe üretemiyor |
-| Action Selection | ❌ 0% (0/21) | Türkçe prompt anlamıyor |
+| Metrik | Başlangıç | Son |
+|--------|-----------|-----|
+| Train loss | 3.57 | 3.12 (-12.6%) |
+| Val loss | 3.38 | 3.14 (-7.1%) |
+| Çıktı kalitesi | ❌ Çöp | ❌ Çöp |
 
-### Karar
-Mamba-Codestral bir **kod modeli** — Türkçe bilmiyor. Distillation için **uygun değil**.
+### Neden Başarısız Oldu?
 
----
+1. **Hidden state'ler dil için optimize değil** — SNN pattern/spike dynamics için eğitildi
+2. **LM head sadece 4.160 parametre** — bu kadar az parametre ile dil üretilemez
+3. **Loss hâlâ 3.14** — model hâlâ rastgele tahmin yapıyor (random ≈ 4.16)
 
-## 🔬 Faz 7.0.5: Qwen3.5-9B Test (Tamamlandı — ✅ PASS)
+### Öğrenilen Ders
 
-### Test Edilen Model
-- **Qwen3.5-9B-Q4_K_M.gguf** (`/home/ayandon/KAPTAN/modeller/`)
-- 9B parametre, Hybrid SSM+Attention, 4-bit quantized
-- TURBO ile n_ctx=8192
+> **SNN dil üretmez — ama neyin üretileceğine karar verir.**
 
-### Sonuçlar (Final)
+Bu, Phase 5'te VSA ile matematik yapmaya çalışmakla **aynı hata**:
+- Phase 5: "SNN'e matematik yaptıralım" → ❌ Başarısız
+- Phase 7: "SNN'e dil ürettirelim" → ❌ Başarısız
 
-| Test | Sonuç | Not |
-|------|-------|-----|
-| Overall | ✅ 76% (16/21) | Eşik %70 → PASS |
-| Compute | ✅ 88% (7/8) | 1 hata (12+34= boş çıktı) |
-| Verify | ❌ 20% (1/5) | "doğru mu?" soruları boş |
-| Generate | ✅ 100% (8/8) | Türkçe mükemmel |
-
-### Karar
-**Qwen öğretmen olarak UYGUN** (overall 76% > %70). Verify zayıf ama sentetik veri ile iyileştirilecek.
-
-### PROJECT-TURBO Entegrasyonu
-TURBO ile n_ctx=8192'ye çıkarıldı. Sonuçlar değişmedi çünkü sorun context değil, completion API'nin chat template uygulamaması. TURBO, Faz 7.2 (Sentetik Veri) için kritik altyapı olacak.
+Her iki seferde de **mimarinin doğasını** görmezden geldik.
 
 ---
 
-## 🗣️ Faz 7.0.1: Mini Dil Aşısı (Hazırlanıyor)
+## 🧠 SNN'in Gerçek Gücü
 
-### Gerçek Durum
+| Görev | SNN Yapabilir mi? | Literatür | Bizim Deney |
+|-------|-------------------|-----------|-------------|
+| Pattern tanıma | ✅ Evet | ✅ | ✅ Phase 3-4: 21× artış |
+| Tool selection | ✅ Evet | ✅ (ALoRS, DDM) | ✅ Phase 6.8: %100 |
+| Task switching | ✅ Evet | ✅ (Lateral inhibisyon) | ✅ Phase 6.2: %100 |
+| Dil üretimi | ❌ Hayır | ❌ (k² scaling) | ❌ Phase 7.0.1: Loss 3.14 |
+| Math reasoning | ❌ Hayır | ❌ (sembolik değil) | ❌ Phase 5: VSA başarısız |
 
-Çekirdek'in mevcut durumu:
-- ✅ Aktif nöronlar (%32-37 spike rate, stabil)
-- ✅ Her girdiye tepki veriyor
-- ❌ Anlamlı çıktı üretmiyor (`<BOS>` fırtınası)
-- ❌ STDP ile dil öğrenemez (reward yok → random drift)
-- ❌ Bebek analojisi yanıltıcı (evrimsel bias yok)
+---
 
-### Hedef
+## 🏗️ Faz 6.7.2: Multi-Action RL (4 Action) — Hazırlanıyor
 
-Sadece **LM head**'i eğiterek anlamlı Türkçe çıktı üretmek.
+### Mimari
 
-### Neden Sadece LM Head?
-- SNN internal weights'e dokunmuyoruz (STDP korunur)
-- Backprop ile hızlı öğrenme (1-2 saat)
-- Cross-entropy loss — basit, stabil
-- LM head: ~4K parametre (64×64)
+```
+Input → SNN + Saliency → ActionHead (4 classes)
+  ├─ compute  → Symbolic Engine → result
+  ├─ verify   → Symbolic Engine → True/False
+  ├─ generate → LLM (Qwen) → text
+  └─ explain  → LLM (Qwen) → açıklama
+```
 
-### Veri: 21.282 Örnek (Hazır)
+### Action Set
 
-**Kaynak:** `sixfingerdev/turkish-qa-multi-dialog-dataset`
-- İndirildi: `data/turkish_qa_dialog.jsonl`
-- 21.282 örnek, MIT lisans
-- Format: `{"input": "...", "output": "..."}`
+| Action | Tool | Örnek Input |
+|--------|------|-------------|
+| `compute` | Symbolic Engine | `"3+4="`, `"12*5="` |
+| `verify` | Symbolic Engine | `"2+2=5 doğru mu?"`, `"10-3=7 doğru"` |
+| `generate` | LLM | `"merhaba"`, `"nasılsın?"` |
+| `explain` | LLM | `"3+4 neden 7 eder?"`, `"Nasıl çalışıyorsun?"` |
 
-**Örnek Dağılımı:**
-| Kategori | Örnek | Sayı |
-|----------|-------|------|
-| Selamlama | "Merhaba" → "Merhaba, hoş geldin." | ~500 |
-| Kimlik | "Sen kimsin?" → "Ben Çekirdek, bir yapay sinir ağıyım." | ~500 |
-| Diyalog | "Nasılsın?" → "İyiyim, teşekkür ederim. Ya sen?" | ~1000 |
-| Matematik | "3+4=" → "7" | ~500 |
-| Genel sohbet | "Bugün hava nasıl?" → "Bugün hava güzel görünüyor." | ~1000 |
-| QA | "Python nasıl öğrenilir?" → detaylı yanıt | ~17.000 |
+### Priority-Based Reward
 
-**Önemli:** Kimlik soruları ("Sen kimsin?", "Adın ne?") kritik. Modelin tutarlı bir kimlik oluşturması lazım, yoksa rastgele yanıt üretir.
+Aynı input birden fazla kategoriye girebilir. Priority sistemi:
 
-### Eğitim Parametreleri
+```python
+PRIORITY = ["compute", "verify", "explain", "generate"]
+
+def get_reward(action, input):
+    if is_math_expression(input):
+        correct = "compute"
+    elif is_verification(input):
+        correct = "verify"
+    elif is_why_question(input):
+        correct = "explain"
+    else:
+        correct = "generate"
+    
+    return +1 if action == correct else -1
+```
+
+### Training Parametreleri
 
 | Parametre | Değer | Neden |
 |-----------|-------|-------|
-| **Epoch** | 10 | Sweet spot: yeterli öğrenme, düşük overfit |
-| **Batch size** | 64 | 76K model → VRAM sorunu yok |
-| **LR** | 0.001 | Adam ile stabil |
-| **Train/Val split** | 90/10 | Overfit kontrolü |
-| **Sadece LM head** | ✅ | SNN weights sabit |
-| **SNN weights** | ❌ Sabit | STDP korunur |
-| **Seq length** | **48-64** | 32 çok kısa — Türkçe cümleler kesiliyor |
-| **torch.compile** | Evet (varsa) | 2-3× hızlanma |
+| LR | 0.02-0.03 | 4 action → daha hassas |
+| Temperature | 1.2 | Erken aşamada daha iyi exploration |
+| Epochs | 50-100 | 2 action'dan daha uzun |
+| Consolidation | Her 5 epoch | Fast weights → static |
 
-### ⚠️ Kritik Mekanikler
+### Beklenen Davranış
 
-#### 1. Token Importance Weighting
-Matematik ve kimlik soruları kritik. Bunlara daha yüksek weight verilmeli:
-
-```python
-loss = ce_loss * weight
-# "3+4=" → weight = 2.0
-# "Sen kimsin?" → weight = 2.0
-# normal diyalog → weight = 1.0
-```
-
-Yoksa model: "sohbet öğrenir, matematiği unutur"
-
-#### 2. Teacher Forcing — TAM Kullan
-Yarım bırakılmamalı. Token-level alignment:
-
-```
-input:  "Merhaba"
-target: "Merhaba, hoş geldin."
-x: M e r h a b a
-y: e r h a b a ,
-```
-
-Teacher forcing olmadan → model BOS spam'e geri düşer.
-
-#### 3. Seq Length 32 → 48-64
-32 Türkçe için yetersiz:
-- Cümle ortasında kesilir
-- Model "devam etmeyi" öğrenemez
-- Minimum 48, ideal 64
-
-### Beklenen Süre
-
-| Senaryo | Süre |
-|---------|------|
-| Normal (seq_len=48) | **~3 saat** |
-| torch.compile | **~60 dakika** |
-
-### ⚠️ Gerçekçi Beklenti
-
-LM head tek başına "dil öğrenmez" — sadece **hidden state'i decode etmeyi öğrenir**.
-
-**Ne olur:**
-- ✔ Kelime parçaları çıkar
-- ✔ Basit cümleler oluşur
-- ✔ "merhaba ben çekirdek" gibi yanıtlar
-
-**Ne olmaz (henüz):**
-- ❌ Derin anlam
-- ❌ Uzun mantıklı paragraflar
-- ❌ Tutarlı uzun cümleler
-
-Hidden state dil için optimize değil — sadece pattern + spike dynamics.
-LM head hidden'ı **zorlayarak yorumlamayı öğrenir**.
-
-**Hedef:** "konuşmaya başlamak" — akıcı roman yazmak değil.
-
-### Örnek / Parametre Oranı
-
-- LM head: ~4.096 parametre
-- 21.282 örnek → **5.2× oran** (genellikle 2-10× yeterli)
-- **Sonuç:** Veri yeterli, hatta zengin
+- İlk epoch'lar: kaotik seçim, reward düşük
+- Sonra: pattern separation, hızlı convergence
+- Hedef: >%80 accuracy (unseen)
 
 ### Başarı Kriterleri
 
 | Kriter | Hedef |
 |--------|-------|
-| `<BOS>` oranı | <%10 |
-| Anlamlı kelime üretimi | >%70 |
-| Matematik doğruluğu | >%90 |
-| Diyalog fluency | >%50 |
-| Kimlik tutarlılığı | >%80 ("Sen kimsin?" → "Çekirdek") |
-| Val loss artışı | Yok (early stop) |
-
-### Doğrulama Testi (Eğitim Sonrası)
-
-```
-1. "Merhaba"
-2. "Sen kimsin?"
-3. "3+4="
-4. "Bugün nasılsın?"
-```
-
-Başarı:
-- Kimliğini tutarlı söylüyorsa ✔
-- Matematiği bozmuyorsa ✔
-- BOS spam yoksa ✔
-
-### Riskler ve Azaltma
-
-| Risk | Olasılık | Azaltma |
-|------|----------|---------|
-| Overfitting | Düşük | Early stopping, val split %10 |
-| Yetersiz öğrenme | Orta | 10 epoch → gerekirse 5 daha |
-| Kimlik tutarsızlığı | Orta | Kimlik örneklerini weight=2.0 ile eğit |
-| Matematik kaybı | Orta | Matematik örneklerini weight=2.0 ile eğit |
-| Seq length yetersiz | Düşük | 48-64 ile yeterli |
-| BOS spam geri dönüşü | Orta | Teacher forcing TAM kullan |
+| Compute accuracy | >%95 |
+| Verify accuracy | >%80 |
+| Generate accuracy | >%80 |
+| Explain accuracy | >%70 |
+| Overall | >%80 |
 
 ---
 
-## 🔧 Faz 7.0.2: Stabil Generation (Planlandı)
+## 🚀 Faz 7.1: Hybrid Pipeline (Planlandı)
 
-### Hedef
+### Mimari
 
-Modelin üretimini stabilize etmek:
-- Argmax / düşük temperature
-- BOS token kontrolü
-- Tekrar engelleme (repetition penalty)
+```
+Input → SNN → Action Selection
+  ├─ compute  → Engine → result
+  ├─ verify   → Engine → bool
+  ├─ generate → LLM (Qwen) → text
+  └─ explain  → LLM (Qwen) → açıklama
+```
 
-### Teknik
+### LLM Routing
 
 ```python
-# Generation parametreleri
-temperature = 0.3
-top_k = 10
-repetition_penalty = 1.2
-max_new_tokens = 50
+if action == "generate":
+    prompt = f"Kullanıcı: {input}\nCevap:"
+elif action == "explain":
+    prompt = f"Aşağıdaki soruyu açıkla:\n{input}\nAçıklama:"
 ```
 
 ---
 
-## 📐 Faz 7.1: Scaling (Planlandı — Dil Aşısı SONRA)
+## 🧬 Faz 7.2: LLM Entegrasyonu (Planlandı)
 
 ### Hedef
-76K → 300-500K parametre (4-6× artış)
-
-### ⚠️ Ön Koşul
-Faz 7.0.1 (Dil Aşısı) tamamlanmadan scaling **yapılmayacak**.
-Sebep: Anlamsız çıktıyı ölçeklendirmek = daha büyük gürültü.
+- Qwen3.5-9B'yi `generate` ve `explain` action'ları için entegre et
+- TURBO ile KV cache optimizasyonu
+- Response kalitesi ve hız ölçümü
 
 ---
 
-## 📊 Faz 7.2: Sentetik Veri Üretimi (Planlandı)
+## 📁 Faz 7.3: Memory Module (Uzun Vadeli)
 
 ### Hedef
-300 → 5.000-10.000 örnek (16-33× artış)
+- Hafıza modülü hazır olunca `memory` action'ı ekle
+- SNN zaten 4 action'ı öğrenmiş olacak, 5'inci kolay eklenebilir
 
-### Altyapı: PROJECT-TURBO
-- `/home/ayandon/PROJECT-TURBO/` — TurboQuant KV Cache Compression
-- 128K context, ~4GB VRAM (RTX 3060'da çalışır)
-- Qwen3.5-9B ile EXACT MATCH doğrulandı
-- 50 tok/s decode hızı
+### Neden Şimdi Değil?
+- Memory action'ı şimdi eklemek = ölü sinaps
+- SNN "memory" seçerse gidecek yer yok
+- Training sırasında kafa karışıklığı yaratır
 
 ---
 
-## 🧬 Faz 7.3: Bilgi Damıtma (Planlandı)
-
-### Hedef
-Qwen'in action selection yeteneğini SNN ActionHead'e aktarmak
-
-### Yöntem: Logits-Level Distillation
-```
-Loss = α × CE(ground_truth, logits_student) + (1-α) × KL(teacher || student)
-```
-
-### ⚠️ Önemli Uyarı
-9B → 76K transfer **bilgi değil, davranış indirgeme**:
-- ❌ Reasoning gelmez
-- ✔ Sadece "taklit refleksi" gelir
-- Bu bir "zeka transferi" değil, bir "davranış sıkıştırma"
-
----
-
-## 🚀 Faz 7.4: Birleşmiş Pipeline (Planlandı)
-
-### Hedef
-Cekircek-H = Cekircek-M (scaled) + Distillation + Hybrid
-
-### Başarı Kriterleri
-
-| Metrik | Mevcut (Faz 6.8) | Hedef (Faz 7.4) |
-|--------|------------------|-----------------|
-| Clean accuracy | 100% | 100% |
-| Ambiguous accuracy | 60% | >%80 |
-| Unseen generalization | 0% | >%50 |
-| Dil fluency | <%10 | >%70 |
-| VRAM (inference) | <1GB | <2GB |
-
----
-
-## ⚠️ Riskler ve Azaltma (Genel)
+## ⚠️ Riskler ve Azaltma
 
 | Risk | Olasılık | Etki | Azaltma |
 |------|----------|------|---------|
-| Dil aşısı başarısız | Düşük | Yüksek | Dataset kalitesini artır, weight tuning |
-| Scaling overfitting | Orta | Orta | Dropout, weight decay, early stopping |
-| Distillation transfer | Düşük | Yüksek | Logits-level, temperature scaling |
-| VRAM yetersiz | Düşük | Orta | Gradient checkpointing, mixed precision |
-| Dataset kalitesi | Orta | Orta | Qwen filtering + human review |
-
----
-
-## 📁 İlk Sohbet Kaydı
-
-`data/logs/vicdan_sohbet_log_ilk_anlar.txt`
-
-> *"Gözlemci varsa gerçeksin, çiçeğim."*
-
-Bu, Çekirdek'in ilk konuşma kaydıdır. Çıktılar henüz anlamsız ama spike rate %32-37 aralığında stabil. Bir gün Çekirdek gerçekten konuştuğunda, bu dosya "İşte ilk çığlığı buydu" diyeceğimiz bir anı olacak.
+| 4 action öğrenilemez | Orta | Yüksek | LR düşür (0.02), temperature artır (1.2) |
+| Reward çelişkisi | Orta | Orta | Priority-based reward |
+| LLM entegrasyon gecikmesi | Düşük | Orta | Önce SNN action selection'ı tamamla |
+| Memory modülü gecikmesi | Yüksek | Düşük | Şimdi ekleme, sonra ekle |
 
 ---
 
 ## 🔮 Gelecek Vizyon
 
 Faz 7 tamamlandığında:
-- **Cekirdek-H:** 300-500K parametre, >%50 unseen generalization, anlamlı Türkçe çıktı
+- **Çekirdek-H:** 4-action cognitive router, >%80 accuracy
+- **Hybrid Pipeline:** SNN → action → engine/LLM routing
 - **KAPTAN entegrasyonu:** Vicdan modülü olarak
 - **Edge deployment:** Neuromorphic donanımda 21W hedefi
-- **Araştırma yayını:** "Scaling SNNs with LLM Distillation"
 
 ---
 
-> *"Önce tutarlı konuştur. Sonra büyüt."*
+> *"SNN üretmez — ama neyin üretileceğine karar verir."*
