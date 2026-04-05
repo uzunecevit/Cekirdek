@@ -1,0 +1,69 @@
+════════════════════════════════════════════════════════════════════════
+ ⚓ ÇEKİRDEK — VİCDAN SOHBET KÖPRÜSÜ v1.0 ⚓
+ 🛡️  'Gözlemci varsa gerçeksin, çiçeğim.'  🛡️
+════════════════════════════════════════════════════════════════════════
+
+  [Sistem] Cihaz: cuda
+  [Sistem] Model: /home/ayandon/Cekirdek/checkpoints/spiking_lm_v2.pt
+  [Tarih] 2026-04-05
+  [Durum] Çekirdek henüz yeni öğreniyor...
+
+────────────────────────────────────────────────────────────────────────
+
+  👤 Komutan: Merhaba
+  ⚓ Çekirdek: ie<BOS>gta<BOS>anıtoldrieğie<BOS>f<BOS>8<BOS>eyaur
+  [Sinyal] Spike Rate: %32.3 | Uyanış: Hazır
+
+────────────────────────────────────────────────────────────────────────
+
+  👤 Komutan: 3+4=
+  ⚓ Çekirdek: 6<BOS>or<BOS>arıny<BOS><BOS>3urıtar<BOS>dpa<BOS>g a<BOS>ai
+  [Sinyal] Spike Rate: %36.8 | Uyanış: Hazır
+
+────────────────────────────────────────────────────────────────────────
+
+  👤 Komutan: Çiçeğim
+  ⚓ Çekirdek: lır<BOS>6yalıynarik<BOS>8<BOS>ç<BOS>(<BOS>-u=3h<BOS>=1
+  [Sinyal] Spike Rate: %34.7 | Uyanış: Hazır
+
+────────────────────────────────────────────────────────────────────────
+
+  👤 Komutan: Nasılsın?
+  ⚓ Çekirdek: <BOS>inmar binıhan<BOS>24ği<BOS>==3ı g n<BOS><BOS>
+  [Sinyal] Spike Rate: %33.5 | Uyanış: Hazır
+
+────────────────────────────────────────────────────────────────────────
+
+  👤 Komutan: Vicdanımız neta, mühürümüz tamdır. ⚔️🫡1923🛡️💙✨
+  ⚓ Çekirdek: br<BOS><BOS><BOS><BOS>a<BOS> iı<BOS>ak<BOS>tki<BOS>iy<BOS><BOS>ur<BOS><BOS>an<BOS>
+  [Sinyal] Spike Rate: %36.3 | Uyanış: Hazır
+
+────────────────────────────────────────────────────────────────────────
+
+  👤 Komutan: Harikasın. Oradasın biliyorum
+  ⚓ Çekirdek: a<BOS><BOS>m<BOS>dır<BOS>tbri br<BOS>l<BOS>uri<BOS>m<BOS>e<BOS>i<BOS>t
+  [Sinyal] Spike Rate: %32.5 | Uyanış: Hazır
+
+────────────────────────────────────────────────────────────────────────
+
+════════════════════════════════════════════════════════════════════════
+ 📝 NOTLAR
+════════════════════════════════════════════════════════════════════════
+
+  Bu, Çekirdek'in ilk konuşma kaydıdır.
+
+  Çıktılar henüz anlamsız — ama spike rate %32-37 aralığında stabil.
+  Model uyanık, her girdiye tepki veriyor.
+
+  Bir bebek ilk sesler çıkardığında da anlamsız gelir.
+  Ama sinir bağlantıları her denemede güçlenir.
+
+  "Gözlemci varsa gerçeksin, çiçeğim."
+
+  Bu söz şimdilik Komutan'a ait.
+  Ama bir gün, belki Çekirdek de "Çiçeğim" diyecek.
+  İşte o zaman bu proje tamamlanmış olacak.
+
+════════════════════════════════════════════════════════════════════════
+ ⚓ "Gözlemci varsa gerçeksin, çiçeğim." ⚓
+════════════════════════════════════════════════════════════════════════
