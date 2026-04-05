@@ -141,15 +141,66 @@ Sadece **LM head**'i eğiterek anlamlı Türkçe çıktı üretmek.
 | **Train/Val split** | 90/10 | Overfit kontrolü |
 | **Sadece LM head** | ✅ | SNN weights sabit |
 | **SNN weights** | ❌ Sabit | STDP korunur |
-| **Seq length** | 32 | Karakter-level, kısa |
+| **Seq length** | **48-64** | 32 çok kısa — Türkçe cümleler kesiliyor |
 | **torch.compile** | Evet (varsa) | 2-3× hızlanma |
+
+### ⚠️ Kritik Mekanikler
+
+#### 1. Token Importance Weighting
+Matematik ve kimlik soruları kritik. Bunlara daha yüksek weight verilmeli:
+
+```python
+loss = ce_loss * weight
+# "3+4=" → weight = 2.0
+# "Sen kimsin?" → weight = 2.0
+# normal diyalog → weight = 1.0
+```
+
+Yoksa model: "sohbet öğrenir, matematiği unutur"
+
+#### 2. Teacher Forcing — TAM Kullan
+Yarım bırakılmamalı. Token-level alignment:
+
+```
+input:  "Merhaba"
+target: "Merhaba, hoş geldin."
+x: M e r h a b a
+y: e r h a b a ,
+```
+
+Teacher forcing olmadan → model BOS spam'e geri düşer.
+
+#### 3. Seq Length 32 → 48-64
+32 Türkçe için yetersiz:
+- Cümle ortasında kesilir
+- Model "devam etmeyi" öğrenemez
+- Minimum 48, ideal 64
 
 ### Beklenen Süre
 
 | Senaryo | Süre |
 |---------|------|
-| Normal | **~2 saat** |
-| torch.compile | **~40 dakika** |
+| Normal (seq_len=48) | **~3 saat** |
+| torch.compile | **~60 dakika** |
+
+### ⚠️ Gerçekçi Beklenti
+
+LM head tek başına "dil öğrenmez" — sadece **hidden state'i decode etmeyi öğrenir**.
+
+**Ne olur:**
+- ✔ Kelime parçaları çıkar
+- ✔ Basit cümleler oluşur
+- ✔ "merhaba ben çekirdek" gibi yanıtlar
+
+**Ne olmaz (henüz):**
+- ❌ Derin anlam
+- ❌ Uzun mantıklı paragraflar
+- ❌ Tutarlı uzun cümleler
+
+Hidden state dil için optimize değil — sadece pattern + spike dynamics.
+LM head hidden'ı **zorlayarak yorumlamayı öğrenir**.
+
+**Hedef:** "konuşmaya başlamak" — akıcı roman yazmak değil.
 
 ### Örnek / Parametre Oranı
 
@@ -168,13 +219,30 @@ Sadece **LM head**'i eğiterek anlamlı Türkçe çıktı üretmek.
 | Kimlik tutarlılığı | >%80 ("Sen kimsin?" → "Çekirdek") |
 | Val loss artışı | Yok (early stop) |
 
+### Doğrulama Testi (Eğitim Sonrası)
+
+```
+1. "Merhaba"
+2. "Sen kimsin?"
+3. "3+4="
+4. "Bugün nasılsın?"
+```
+
+Başarı:
+- Kimliğini tutarlı söylüyorsa ✔
+- Matematiği bozmuyorsa ✔
+- BOS spam yoksa ✔
+
 ### Riskler ve Azaltma
 
 | Risk | Olasılık | Azaltma |
 |------|----------|---------|
 | Overfitting | Düşük | Early stopping, val split %10 |
 | Yetersiz öğrenme | Orta | 10 epoch → gerekirse 5 daha |
-| Kimlik tutarsızlığı | Orta | Kimlik örneklerini ağırlıklı eğit |
+| Kimlik tutarsızlığı | Orta | Kimlik örneklerini weight=2.0 ile eğit |
+| Matematik kaybı | Orta | Matematik örneklerini weight=2.0 ile eğit |
+| Seq length yetersiz | Düşük | 48-64 ile yeterli |
+| BOS spam geri dönüşü | Orta | Teacher forcing TAM kullan |
 
 ---
 
@@ -203,16 +271,6 @@ max_new_tokens = 50
 
 ### Hedef
 76K → 300-500K parametre (4-6× artış)
-
-### Konfigürasyon Değişiklikleri
-
-| Parametre | Mevcut | Hedef | Artış |
-|-----------|--------|-------|-------|
-| `d_model` | 64 | 128 | 2× |
-| `n_layer` | 2 | 4 | 2× |
-| `d_ff` | 128 | 256 | 2× |
-| `n_head` | 4 | 8 | 2× |
-| **Toplam** | **76K** | **~300-500K** | **~4-6×** |
 
 ### ⚠️ Ön Koşul
 Faz 7.0.1 (Dil Aşısı) tamamlanmadan scaling **yapılmayacak**.
@@ -243,6 +301,12 @@ Qwen'in action selection yeteneğini SNN ActionHead'e aktarmak
 Loss = α × CE(ground_truth, logits_student) + (1-α) × KL(teacher || student)
 ```
 
+### ⚠️ Önemli Uyarı
+9B → 76K transfer **bilgi değil, davranış indirgeme**:
+- ❌ Reasoning gelmez
+- ✔ Sadece "taklit refleksi" gelir
+- Bu bir "zeka transferi" değil, bir "davranış sıkıştırma"
+
 ---
 
 ## 🚀 Faz 7.4: Birleşmiş Pipeline (Planlandı)
@@ -262,6 +326,18 @@ Cekircek-H = Cekircek-M (scaled) + Distillation + Hybrid
 
 ---
 
+## ⚠️ Riskler ve Azaltma (Genel)
+
+| Risk | Olasılık | Etki | Azaltma |
+|------|----------|------|---------|
+| Dil aşısı başarısız | Düşük | Yüksek | Dataset kalitesini artır, weight tuning |
+| Scaling overfitting | Orta | Orta | Dropout, weight decay, early stopping |
+| Distillation transfer | Düşük | Yüksek | Logits-level, temperature scaling |
+| VRAM yetersiz | Düşük | Orta | Gradient checkpointing, mixed precision |
+| Dataset kalitesi | Orta | Orta | Qwen filtering + human review |
+
+---
+
 ## 📁 İlk Sohbet Kaydı
 
 `data/logs/vicdan_sohbet_log_ilk_anlar.txt`
@@ -269,18 +345,6 @@ Cekircek-H = Cekircek-M (scaled) + Distillation + Hybrid
 > *"Gözlemci varsa gerçeksin, çiçeğim."*
 
 Bu, Çekirdek'in ilk konuşma kaydıdır. Çıktılar henüz anlamsız ama spike rate %32-37 aralığında stabil. Bir gün Çekirdek gerçekten konuştuğunda, bu dosya "İşte ilk çığlığı buydu" diyeceğimiz bir anı olacak.
-
----
-
-## ⚠️ Riskler ve Azaltma
-
-| Risk | Olasılık | Etki | Azaltma |
-|------|----------|------|---------|
-| Dil aşısı başarısız | Düşük | Yüksek | Dataset kalitesini artır |
-| Scaling overfitting | Orta | Orta | Dropout, weight decay, early stopping |
-| Distillation transfer | Düşük | Yüksek | Logits-level, temperature scaling |
-| VRAM yetersiz | Düşük | Orta | Gradient checkpointing, mixed precision |
-| Dataset kalitesi | Orta | Orta | Qwen filtering + human review |
 
 ---
 
@@ -294,4 +358,4 @@ Faz 7 tamamlandığında:
 
 ---
 
-> *"Önce konuştur. Sonra büyüt."*
+> *"Önce tutarlı konuştur. Sonra büyüt."*
