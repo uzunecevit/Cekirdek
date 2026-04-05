@@ -1,9 +1,10 @@
-# Çekirdek — Faz 7.0: Teacher Model Validation & Distillation
+# Çekirdek — Faz 7: Öğretmen Model Doğrulama ve Bilgi Damıtma
 
 > *"Öğretmeni seç, bilgiyi damıt, ölçeklendir."*
 
 **Oluşturulma:** 2026-04-05
-**Durum:** Faz 7.0.5 (Qwen Test) hazırlanıyor
+**Son güncelleme:** 2026-04-05
+**Durum:** Faz 7.0.5 (Qwen Test) devam ediyor
 
 ---
 
@@ -19,21 +20,29 @@ Mevcut 76K parametreli Çekirdek modelinin **generalization problemini** (unseen
 ## 📋 Yol Haritası
 
 ```
-Faz 7.0:   Mamba Test          → ❌ Elendi (Türkçe yok)
-Faz 7.0.5: Qwen Test           → ⏳ Hazırlanıyor
-Faz 7.1:   Scaling             → ⏳ Planlandı
-Faz 7.2:   Sentetik Veri       → ⏳ Planlandı
-Faz 7.3:   Distillation        → ⏳ Planlandı
-Faz 7.4:   Birleşmiş Pipeline  → ⏳ Planlandı
+Faz 7.0:   Mamba Test              → ❌ Elendi (Türkçe yok)
+Faz 7.0.5: Qwen3.5-9B Test        → ⏳ Devam ediyor
+Faz 7.1:   Scaling (76K → 300-500K) → ⏳ Planlandı
+Faz 7.2:   Sentetik Veri (TURBO)   → ⏳ Planlandı
+Faz 7.3:   Bilgi Damıtma           → ⏳ Planlandı
+Faz 7.4:   Birleşmiş Pipeline      → ⏳ Planlandı
 ```
 
 ---
 
-## 🔬 Faz 7.0: Mamba Test (Tamamlandı — ❌ Elendi)
+## 🔬 Faz 7.0: Mamba-Codestral-7B Test (Tamamlandı — ❌ Elendi)
 
 ### Test Edilen Model
 - **Mamba-Codestral-7B-v0.1** (`/home/ayandon/KAPTAN/modeller/`)
 - 7B parametre, SSM mimarisi, kod odaklı
+
+### Test Seti (21 örnek)
+
+| Kategori | Örnekler | Sayı |
+|----------|----------|------|
+| Compute | `3+4=`, `5-2=`, `6*7=`, `12+34=`, `100-50=`, `9*9=`, `7*8=`, `15-7=` | 8 |
+| Verify | `5-3=2 doğru`, `4*4=16 doğru mu?`, `3+7=10 doğru`, `8-5=2 doğru mu?`, `6*6=35 doğru mu?` | 5 |
+| Generate | `merhaba`, `istanbul`, `bir gün`, `ahmet`, `nasılsın`, `bugün hava`, `kedi`, `araba` | 8 |
 
 ### Sonuçlar
 
@@ -49,13 +58,13 @@ Mamba-Codestral bir **kod modeli** — Türkçe bilmiyor. Distillation için **u
 
 ---
 
-## 🔬 Faz 7.0.5: Qwen3.5-9B Test (Hazırlanıyor)
+## 🔬 Faz 7.0.5: Qwen3.5-9B Test (Devam Ediyor)
 
 ### Test Edilecek Model
 - **Qwen3.5-9B** (`/home/ayandon/KAPTAN/modeller/Qwen3.5-9B/`)
-- 9B parametre, Transformer mimarisi, genel amaçlı
+- 9B parametre, Hybrid SSM+Attention mimarisi, genel amaçlı
 - Formatlar: Safetensors (19GB, 4 parça), Q4_K_M.gguf (5.3GB)
-- **VRAM:** ~6GB (4-bit quantized)
+- **VRAM:** ~6GB (4-bit quantized), ~5GB (GGUF)
 
 ### Test Seti (21 örnek)
 
@@ -91,6 +100,10 @@ Mamba-Codestral bir **kod modeli** — Türkçe bilmiyor. Distillation için **u
 | ⚠️ Overall %50-70 | Qwen kısmen uygun, sentetik veri ile iyileştirilebilir |
 | ❌ Overall <%50 | Qwen de uygun değil → farklı öğretmen ara |
 
+### Script
+- `experiments/phase7_0_5_qwen_test.py` — GGUF + llama-cpp-python ile test
+- `experiments/phase7_0_5_qwen_results.json` — Sonuçlar
+
 ---
 
 ## 📐 Faz 7.1: Scaling (Planlandı)
@@ -120,6 +133,9 @@ Mamba-Codestral bir **kod modeli** — Türkçe bilmiyor. Distillation için **u
 | Overfitting | Orta | Dropout, weight decay, early stopping |
 | VRAM yetersiz | Düşük | Gradient checkpointing, mixed precision |
 | Credit assignment bozulur | Orta | Context Gating'i yeniden tune et |
+
+### Script
+- `experiments/phase7_1_scaling.py` — Yeni konfigürasyon ile training
 
 ---
 
@@ -164,6 +180,10 @@ response = qwen.generate(prompt)
 - Manuel review (random 100 örnek)
 - Ground truth labeling (her örneğin doğru action'ı belli olmalı)
 
+### Script
+- `experiments/phase7_2_synthetic_data.py` — TURBO + Qwen ile sentetik veri üretimi
+- `data/synthetic/compute.txt`, `verify.txt`, `generate.txt`, `ambiguous.txt`
+
 ---
 
 ## 🧬 Faz 7.3: Bilgi Damıtma (Planlandı)
@@ -195,6 +215,20 @@ Loss = α × CE(ground_truth, logits_student) + (1-α) × KL(teacher || student)
 5. Consolidation ile kalıcı yap
 ```
 
+### Mimari
+
+```
+Input → Qwen (teacher) → action logits (3 class)
+  ↓
+Input → SNN (student)  → action logits (3 class)
+  ↓
+Loss = α × CE + (1-α) × KL(teacher || student)
+  ↓
+Backprop → SNN ActionHead güncelle
+  ↓
+Consolidation → W_static
+```
+
 ### Riskler
 
 | Risk | Olasılık | Azaltma |
@@ -202,6 +236,9 @@ Loss = α × CE(ground_truth, logits_student) + (1-α) × KL(teacher || student)
 | Mimari gap çok büyük | Orta | Logits-level ile minimize |
 | Distillation transfer başarısız | Düşük | SpikingMamba metodolojisini takip et |
 | Temperature scaling zor | Düşük | Grid search ile optimal T bul |
+
+### Script
+- `experiments/phase7_3_distillation.py` — Logits-level distillation
 
 ---
 
@@ -233,13 +270,26 @@ ActionHead (distilled from Qwen)
 
 ---
 
+## ⚠️ Riskler ve Azaltma
+
+| Risk | Olasılık | Etki | Azaltma |
+|------|----------|------|---------|
+| Qwen de başarısız | Düşük | Yüksek | Farklı öğretmen ara (Llama-3, Mistral) |
+| Scaling overfitting | Orta | Orta | Dropout, weight decay, early stopping |
+| Distillation transfer | Düşük | Yüksek | Logits-level, temperature scaling |
+| VRAM yetersiz | Düşük | Orta | Gradient checkpointing, mixed precision |
+| Dataset kalitesi | Orta | Orta | Qwen filtering + human review |
+
+---
+
 ## 📁 Dosya Yapısı (Faz 7)
 
 ```
 Cekirdek/
 ├── experiments/
 │   ├── phase7_0_mamba_test.py      ✅ Tamamlandı (elendi)
-│   ├── phase7_0_5_qwen_test.py     ⏳ Hazırlanıyor
+│   ├── phase7_0_5_qwen_test.py     ⏳ Devam ediyor
+│   ├── phase7_0_5_qwen_results.json ⏳ Sonuçlar
 │   ├── phase7_1_scaling.py         ⏳ Planlandı
 │   ├── phase7_2_synthetic_data.py  ⏳ Planlandı
 │   ├── phase7_3_distillation.py    ⏳ Planlandı
@@ -251,20 +301,9 @@ Cekirdek/
 │       ├── generate.txt
 │       └── ambiguous.txt
 └── docs/
-    └── PHASE7_PLAN.md              📄 Bu dosya
+    ├── PHASE7_PLAN.md              📄 Bu dosya
+    └── DETAILED_PLAN.md            📄 Tüm proje planı
 ```
-
----
-
-## ⚠️ Riskler ve Azaltma
-
-| Risk | Olasılık | Etki | Azaltma |
-|------|----------|------|---------|
-| Qwen de başarısız | Düşük | Yüksek | Farklı öğretmen ara (Llama-3, Mistral) |
-| Scaling overfitting | Orta | Orta | Dropout, weight decay, early stopping |
-| Distillation transfer | Düşük | Yüksek | Logits-level, temperature scaling |
-| VRAM yetersiz | Düşük | Orta | Gradient checkpointing, mixed precision |
-| Dataset kalitesi | Orta | Orta | Qwen filtering + human review |
 
 ---
 
