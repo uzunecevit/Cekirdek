@@ -128,6 +128,18 @@ Mamba-Codestral bir **kod modeli** — Türkçe bilmiyor. Distillation için **u
 ### Hedef
 300 → 5.000-10.000 örnek (16-33× artış)
 
+### Altyapı: PROJECT-TURBO
+- `/home/ayandon/PROJECT-TURBO/` — TurboQuant KV Cache Compression
+- 128K context, ~4GB VRAM (RTX 3060'da çalışır)
+- Qwen3.5-9B ile EXACT MATCH doğrulandı
+- 50 tok/s decode hızı
+
+### Neden TURBO Gerekli?
+- Sentetik veri üretimi uzun prompt'lar gerektirir (reasoning zincirleri)
+- Standart Qwen: 4K-8K context, ~16GB VRAM (OOM riski)
+- TURBO: 128K context, ~4GB VRAM (güvenli)
+- 10K örnek üretimi: ~3 saat (50 tok/s)
+
 ### Veri Kategorileri
 
 | Kategori | Hedef Sayı | Kaynak |
