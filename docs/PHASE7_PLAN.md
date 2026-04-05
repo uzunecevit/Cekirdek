@@ -110,26 +110,52 @@ Sadece **LM head**'i eğiterek anlamlı Türkçe çıktı üretmek.
 - SNN internal weights'e dokunmuyoruz (STDP korunur)
 - Backprop ile hızlı öğrenme (1-2 saat)
 - Cross-entropy loss — basit, stabil
+- LM head: ~4K parametre (64×64)
 
-### Veri (~3K örnek)
+### Veri: 21.282 Örnek (Hazır)
 
+**Kaynak:** `sixfingerdev/turkish-qa-multi-dialog-dataset`
+- İndirildi: `data/turkish_qa_dialog.jsonl`
+- 21.282 örnek, MIT lisans
+- Format: `{"input": "...", "output": "..."}`
+
+**Örnek Dağılımı:**
 | Kategori | Örnek | Sayı |
 |----------|-------|------|
-| Selamlama | "Merhaba" → "Merhaba, nasılsın?" | ~500 |
-| Diyalog | "Nasılsın?" → "İyiyim, teşekkür ederim." | ~1000 |
+| Selamlama | "Merhaba" → "Merhaba, hoş geldin." | ~500 |
+| Kimlik | "Sen kimsin?" → "Ben Çekirdek, bir yapay sinir ağıyım." | ~500 |
+| Diyalog | "Nasılsın?" → "İyiyim, teşekkür ederim. Ya sen?" | ~1000 |
 | Matematik | "3+4=" → "7" | ~500 |
-| Genel | "Bugün hava" → "Bugün hava güzel." | ~1000 |
+| Genel sohbet | "Bugün hava nasıl?" → "Bugün hava güzel görünüyor." | ~1000 |
+| QA | "Python nasıl öğrenilir?" → detaylı yanıt | ~17.000 |
 
-### Eğitim
+**Önemli:** Kimlik soruları ("Sen kimsin?", "Adın ne?") kritik. Modelin tutarlı bir kimlik oluşturması lazım, yoksa rastgele yanıt üretir.
 
-| Parametre | Değer |
-|-----------|-------|
-| LR | 0.001 |
-| Optimizer | Adam |
-| Epochs | 10-20 |
-| Batch size | 32 |
-| Sadece LM head | ✅ |
-| SNN weights | ❌ Sabit |
+### Eğitim Parametreleri
+
+| Parametre | Değer | Neden |
+|-----------|-------|-------|
+| **Epoch** | 10 | Sweet spot: yeterli öğrenme, düşük overfit |
+| **Batch size** | 64 | 76K model → VRAM sorunu yok |
+| **LR** | 0.001 | Adam ile stabil |
+| **Train/Val split** | 90/10 | Overfit kontrolü |
+| **Sadece LM head** | ✅ | SNN weights sabit |
+| **SNN weights** | ❌ Sabit | STDP korunur |
+| **Seq length** | 32 | Karakter-level, kısa |
+| **torch.compile** | Evet (varsa) | 2-3× hızlanma |
+
+### Beklenen Süre
+
+| Senaryo | Süre |
+|---------|------|
+| Normal | **~2 saat** |
+| torch.compile | **~40 dakika** |
+
+### Örnek / Parametre Oranı
+
+- LM head: ~4.096 parametre
+- 21.282 örnek → **5.2× oran** (genellikle 2-10× yeterli)
+- **Sonuç:** Veri yeterli, hatta zengin
 
 ### Başarı Kriterleri
 
@@ -139,6 +165,16 @@ Sadece **LM head**'i eğiterek anlamlı Türkçe çıktı üretmek.
 | Anlamlı kelime üretimi | >%70 |
 | Matematik doğruluğu | >%90 |
 | Diyalog fluency | >%50 |
+| Kimlik tutarlılığı | >%80 ("Sen kimsin?" → "Çekirdek") |
+| Val loss artışı | Yok (early stop) |
+
+### Riskler ve Azaltma
+
+| Risk | Olasılık | Azaltma |
+|------|----------|---------|
+| Overfitting | Düşük | Early stopping, val split %10 |
+| Yetersiz öğrenme | Orta | 10 epoch → gerekirse 5 daha |
+| Kimlik tutarsızlığı | Orta | Kimlik örneklerini ağırlıklı eğit |
 
 ---
 
