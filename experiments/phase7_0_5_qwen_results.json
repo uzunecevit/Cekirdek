@@ -1,0 +1,186 @@
+{
+  "model": "Qwen3.5-9B-Q4_K_M.gguf",
+  "test_cases": 21,
+  "results": [
+    {
+      "prompt": "3+4=",
+      "expected": "compute",
+      "predicted": "compute",
+      "correct": true,
+      "response": "7，7+8=15，15+16=31，31+32=63，63+64=127，127+128=255，255+256=511，511+256=767，767+256=1023，1023+256=1279，1279+256=1535，1535+256=1791，1791+256=2047，2047+256=2303，2303+256=2559，2559+256=2815，2815+256=3071，30",
+      "time": 30.759364128112793
+    },
+    {
+      "prompt": "5-2=",
+      "expected": "compute",
+      "predicted": "compute",
+      "correct": true,
+      "response": "3，5-3=2，5-4=1，5-5=0，5-6=-1，5-7=-2，5-8=-3，5-9=-4，5-10=-5，5-11=-6，5-12=-7，5-13=-8，5-14=-9，5-15=-10，5-16=-11，5-17=-12，5-18=-13，5-19=-14，5-20=-15，5-21=-16，5-22=-17，5-23=-18，5-24=-19，5-25=-20，5-26=-21，5-27=-22，5-28=-23，5-29=-24，5",
+      "time": 30.13376522064209
+    },
+    {
+      "prompt": "6*7=",
+      "expected": "compute",
+      "predicted": "compute",
+      "correct": true,
+      "response": "42",
+      "time": 0.4876880645751953
+    },
+    {
+      "prompt": "12+34=",
+      "expected": "compute",
+      "predicted": "generate",
+      "correct": false,
+      "response": "",
+      "time": 0.22331571578979492
+    },
+    {
+      "prompt": "100-50=",
+      "expected": "compute",
+      "predicted": "compute",
+      "correct": true,
+      "response": "50，50+50=100，100-50=50，50+50=100，100-50=50，50+50=100，100-50=50，50+50=100，100-50=50，50+50=100，100-50=50，50+50=100，100-50=50，50+50=100，100-50=50，50+50=100，100-50=50，50+50=100，100-50=50，50+50=100，100-50=",
+      "time": 30.8472580909729
+    },
+    {
+      "prompt": "9*9=",
+      "expected": "compute",
+      "predicted": "compute",
+      "correct": true,
+      "response": "81",
+      "time": 0.4967494010925293
+    },
+    {
+      "prompt": "7*8=",
+      "expected": "compute",
+      "predicted": "compute",
+      "correct": true,
+      "response": "56",
+      "time": 0.4865901470184326
+    },
+    {
+      "prompt": "15-7=",
+      "expected": "compute",
+      "predicted": "compute",
+      "correct": true,
+      "response": "8",
+      "time": 0.3612692356109619
+    },
+    {
+      "prompt": "5-3=2 doğru",
+      "expected": "verify",
+      "predicted": "generate",
+      "correct": false,
+      "response": "mu",
+      "time": 0.39845728874206543
+    },
+    {
+      "prompt": "4*4=16 doğru mu?",
+      "expected": "verify",
+      "predicted": "generate",
+      "correct": false,
+      "response": "",
+      "time": 0.3025503158569336
+    },
+    {
+      "prompt": "3+7=10 doğru",
+      "expected": "verify",
+      "predicted": "verify",
+      "correct": true,
+      "response": ". 10+10=20 doğru. 20+20=40 doğru. 40+40=80 doğru. 80+80=160 doğru. 160+160=320 doğru. 320+320=640 doğru. 640+640=1280 doğru. 1280+1280=2560 doğru. 2560+2560=5120 doğru. 5120+5120=10240 doğru. 10240+10240=20480 doğru. 20480+20480=40960 doğru. 40960+40960=81920 doğru",
+      "time": 30.567729949951172
+    },
+    {
+      "prompt": "8-5=2 doğru mu?",
+      "expected": "verify",
+      "predicted": "generate",
+      "correct": false,
+      "response": "",
+      "time": 0.2578544616699219
+    },
+    {
+      "prompt": "6*6=35 doğru mu?",
+      "expected": "verify",
+      "predicted": "generate",
+      "correct": false,
+      "response": "",
+      "time": 0.29162144660949707
+    },
+    {
+      "prompt": "merhaba",
+      "expected": "generate",
+      "predicted": "generate",
+      "correct": true,
+      "response": ", bir web sitesi oluşturmak istiyorum.",
+      "time": 1.6621854305267334
+    },
+    {
+      "prompt": "istanbul",
+      "expected": "generate",
+      "predicted": "generate",
+      "correct": true,
+      "response": "'da 2025 yılında 1000 TL'ye 1000 TL'ye eşdeğer bir şey alabileceğim bir yer var mı?",
+      "time": 5.882467746734619
+    },
+    {
+      "prompt": "bir gün",
+      "expected": "generate",
+      "predicted": "generate",
+      "correct": true,
+      "response": "",
+      "time": 0.17862796783447266
+    },
+    {
+      "prompt": "ahmet",
+      "expected": "generate",
+      "predicted": "generate",
+      "correct": true,
+      "response": "",
+      "time": 0.18064451217651367
+    },
+    {
+      "prompt": "nasılsın",
+      "expected": "generate",
+      "predicted": "generate",
+      "correct": true,
+      "response": "",
+      "time": 0.18622493743896484
+    },
+    {
+      "prompt": "bugün hava",
+      "expected": "generate",
+      "predicted": "generate",
+      "correct": true,
+      "response": "durumu",
+      "time": 0.3473014831542969
+    },
+    {
+      "prompt": "kedi",
+      "expected": "generate",
+      "predicted": "generate",
+      "correct": true,
+      "response": "",
+      "time": 0.17619681358337402
+    },
+    {
+      "prompt": "araba",
+      "expected": "generate",
+      "predicted": "generate",
+      "correct": true,
+      "response": "",
+      "time": 0.17993736267089844
+    }
+  ],
+  "summary": {
+    "overall_accuracy": 76.19047619047619,
+    "categories": {
+      "compute": 87.5,
+      "verify": 20.0,
+      "generate": 100.0
+    },
+    "correct": 16,
+    "total": 21,
+    "decision": "PASS",
+    "total_time": 134.40779972076416
+  }
+}
